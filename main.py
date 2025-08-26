@@ -1,9 +1,9 @@
 # main.py
 import tkinter as tk
 from collections import defaultdict
-from wordlist import load_wordle_list
+from wordlist import load_wordle_list, get_frequency
 from feedback import get_feedback, update_constraints
-from solver import rank_suggestions, filter_candidates, get_frequency, prefilter_grays
+from solver import rank_suggestions, filter_candidates, prefilter_grays
 
 wordle_list = load_wordle_list()
 candidates = wordle_list.copy()
@@ -17,7 +17,7 @@ tile_colors = {'G': '#6aaa64', 'Y': '#c9b458', 'B': '#787c7e'}
 
 
 root = tk.Tk()
-root.title("Wordle Solver (Hard Mode)")
+root.title("Wordle Solver")
 root.geometry("600x700")  # Wider default
 root.columnconfigure(0, weight=1)
 
@@ -27,7 +27,7 @@ feedback_buttons = []
 full_word_var = tk.StringVar()
 
 def fill_letter_boxes(*args):
-    word = full_word_var.get().lower()
+    word = full_word_var.get().upper()
     for i in range(5):
         letter_vars[i].set(word[i] if i < len(word) else "")
 
@@ -83,7 +83,7 @@ def auto_suggest():
         return
 
     if mode == "fast":
-        filtered = prefilter_grays(candidates, {}, defaultdict(set), grays)
+        filtered = prefilter_grays(candidates, greens, yellows, grays)
         top5 = sorted(
             [(w, get_frequency(w)) for w in filtered],
             key=lambda x: x[1],
@@ -144,9 +144,15 @@ word_entry_frame.grid(row=0, column=0, sticky="w")
 tk.Label(word_entry_frame, text="Enter Word:").pack(side="left")
 full_word_entry = tk.Entry(word_entry_frame, textvariable=full_word_var, width=10, validate="key", validatecommand=vcmd)
 full_word_entry.pack(side="left")
-full_word_var.trace_add("write", fill_letter_boxes)
+def enforce_uppercase(*args):
+    value = full_word_var.get()
+    if value != value.upper():
+        full_word_var.set(value.upper())
+    fill_letter_boxes()
 
-tk.Button(root, text="Restart", command=restart).grid(row=0, column=1)
+full_word_var.trace_add("write", enforce_uppercase)
+
+tk.Button(root, text="Restart", command=restart).grid(row=0, column=1, padx=(0, 10))
 
 letter_frame = tk.Frame(root)
 letter_frame.grid(row=1, column=0, columnspan=5, pady=10)

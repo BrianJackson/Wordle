@@ -5,12 +5,12 @@ from functools import lru_cache
 from feedback import get_feedback, matches_feedback, enforce_hard_mode
 from wordlist import get_frequency
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1024)
 def cached_feedback(guess, solution):
     return get_feedback(guess, solution)
 
 def calculate_entropy(guess, possible_solutions):
-    patterns = [cached_feedback(guess, sol) for sol in possible_solutions]
+    patterns = [cached_feedback(tuple(guess), tuple(sol)) for sol in possible_solutions]
     unique, counts = np.unique(patterns, return_counts=True)
     probs = counts / len(possible_solutions)
     entropy = -np.sum(probs * np.log2(probs))
