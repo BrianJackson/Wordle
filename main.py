@@ -135,7 +135,7 @@ def update_remaining():
 
 # Validation function to allow only letters
 def validate_letters(P):
-    return P.isalpha() or P == ""
+    return (P.isalpha() or P == "") and len(P) <= 5
 
 vcmd = (root.register(validate_letters), '%P')
 

@@ -10,7 +10,7 @@ def cached_feedback(guess, solution):
     return get_feedback(guess, solution)
 
 def calculate_entropy(guess, possible_solutions):
-    patterns = [cached_feedback(tuple(guess), tuple(sol)) for sol in possible_solutions]
+    patterns = [cached_feedback(guess, sol) for sol in possible_solutions]
     unique, counts = np.unique(patterns, return_counts=True)
     probs = counts / len(possible_solutions)
     entropy = -np.sum(probs * np.log2(probs))
