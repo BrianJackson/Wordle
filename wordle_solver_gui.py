@@ -43,7 +43,7 @@ def calculate_entropy(guess, possible_solutions):
     return -sum((count / total) * math.log2(count / total) for count in counts.values())
 
 def get_frequency(word):
-    return word_frequency(word, 'en') or 0.00001  # fallback for rare words
+    return word_frequency(word, 'en') or 0.00001
 
 def filter_words(words, guess, feedback):
     return [word for word in words if matches_feedback(guess, word, feedback)]
@@ -61,7 +61,7 @@ tile_colors = {'G': '#6aaa64', 'Y': '#c9b458', 'B': '#787c7e'}
 fb_state = ['B'] * 5
 feedback_buttons = []
 
-# Suggest next guess
+# Suggest next guess and show top 5
 def suggest_next_guess():
     if not current_candidates:
         messagebox.showinfo("No Candidates", "No words left to suggest.")
@@ -75,9 +75,17 @@ def suggest_next_guess():
         scores.append((word, score, entropy, frequency))
 
     scores.sort(key=lambda x: x[1], reverse=True)
-    best = scores[0]
-    best_guess.set(best[0].upper())
-    guess_log.insert(tk.END, f"Suggested: {best[0].upper()} (Entropy: {best[2]:.3f}, Frequency: {best[3]:.6f})\n")
+    top5 = scores[:5]
+
+    best_guess.set(top5[0][0].upper())
+    guess_log.insert(tk.END, f"Suggested: {top5[0][0].upper()} (Entropy: {top5[0][2]:.3f}, Frequency: {top5[0][3]:.6f})\n")
+
+    top5_output.delete(1.0, tk.END)
+    top5_output.insert(tk.END, "Top 5 Suggestions:\n")
+    for word, score, entropy, freq in top5:
+        top5_output.insert(tk.END, f"{word.upper():<8} Score: {score:.6f} | Entropy: {entropy:.3f} | Freq: {freq:.6f}\n")
+
+    update_remaining_display()
 
 # Apply feedback
 def apply_feedback():
@@ -94,6 +102,21 @@ def apply_feedback():
         fb_state[i] = 'B'
         feedback_buttons[i].config(text=fb_display['B'], bg=tile_colors['B'])
     suggest_button.config(state="normal")
+    update_remaining_display()
+
+# Restart solver
+def restart_solver():
+    global current_candidates
+    current_candidates = wordle_list.copy()
+    best_guess.set("")
+    guess_log.delete(1.0, tk.END)
+    top5_output.delete(1.0, tk.END)
+    remaining_output.delete(1.0, tk.END)
+    for i in range(5):
+        fb_state[i] = 'B'
+        feedback_buttons[i].config(text=fb_display['B'], bg=tile_colors['B'])
+    suggest_button.config(state="disabled")
+    update_remaining_display()
 
 # Cycle feedback button
 def cycle_feedback(i):
@@ -106,6 +129,13 @@ def cycle_feedback(i):
     else:
         suggest_button.config(state="disabled")
 
+# Display remaining candidates
+def update_remaining_display():
+    remaining_output.delete(1.0, tk.END)
+    remaining_output.insert(tk.END, f"Remaining Candidates: {len(current_candidates)}\n")
+    for word in current_candidates[:20]:
+        remaining_output.insert(tk.END, f"{word.upper()}\n")
+
 # Layout
 tk.Label(root, text="Next Best Guess:").grid(row=0, column=0, sticky="w")
 best_guess = tk.StringVar()
@@ -114,9 +144,11 @@ suggest_button = tk.Button(root, text="Suggest Guess", command=suggest_next_gues
 suggest_button.grid(row=0, column=2)
 suggest_button.config(state="disabled")
 
+tk.Button(root, text="Restart Solver", command=restart_solver).grid(row=0, column=3)
+
 tk.Label(root, text="Enter Feedback:").grid(row=1, column=0, sticky="w")
 feedback_frame = tk.Frame(root)
-feedback_frame.grid(row=1, column=1, columnspan=2)
+feedback_frame.grid(row=1, column=1, columnspan=3)
 
 for i in range(5):
     btn = tk.Button(feedback_frame, text=fb_display['B'], width=3, bg=tile_colors['B'],
@@ -124,10 +156,19 @@ for i in range(5):
     btn.grid(row=0, column=i, padx=2)
     feedback_buttons.append(btn)
 
-tk.Button(root, text="Apply Feedback", command=apply_feedback).grid(row=2, column=0, columnspan=3, pady=5)
+tk.Button(root, text="Apply Feedback", command=apply_feedback).grid(row=2, column=0, columnspan=4, pady=5)
 
 tk.Label(root, text="Guess Log:").grid(row=3, column=0, sticky="w")
-guess_log = tk.Text(root, width=50, height=15)
-guess_log.grid(row=4, column=0, columnspan=3)
+guess_log = tk.Text(root, width=50, height=10)
+guess_log.grid(row=4, column=0, columnspan=4)
 
+tk.Label(root, text="Top 5 Suggestions:").grid(row=5, column=0, sticky="w")
+top5_output = tk.Text(root, width=50, height=8)
+top5_output.grid(row=6, column=0, columnspan=4)
+
+tk.Label(root, text="Remaining Candidates:").grid(row=7, column=0, sticky="w")
+remaining_output = tk.Text(root, width=50, height=10)
+remaining_output.grid(row=8, column=0, columnspan=4)
+
+update_remaining_display()
 root.mainloop()
