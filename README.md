@@ -78,8 +78,9 @@ wordle/
 
 📌 Requirements
 - Python 3.8+
-- wordfreq library:
+- wordfreq and numpy libraries:
 pip install wordfreq
+pip install numpy
 
 
 

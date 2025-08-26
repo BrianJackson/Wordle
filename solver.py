@@ -1,22 +1,33 @@
 # solver.py
 import math
+import numpy as np
+from functools import lru_cache
 from feedback import get_feedback, matches_feedback, enforce_hard_mode
 from wordlist import get_frequency
 
+@lru_cache(maxsize=1024)
+def cached_feedback(guess, solution):
+    return get_feedback(guess, solution)
+
 def calculate_entropy(guess, possible_solutions):
-    patterns = [get_feedback(guess, sol) for sol in possible_solutions]
-    total = len(possible_solutions)
-    counts = {}
-    for pattern in patterns:
-        counts[pattern] = counts.get(pattern, 0) + 1
-    return -sum((count / total) * math.log2(count / total) for count in counts.values())
+    patterns = [cached_feedback(guess, sol) for sol in possible_solutions]
+    unique, counts = np.unique(patterns, return_counts=True)
+    probs = counts / len(possible_solutions)
+    entropy = -np.sum(probs * np.log2(probs))
+    return float(entropy)
+
+def prefilter_grays(candidates, greens, yellows, grays):
+    if greens or yellows:
+        return candidates
+    return [word for word in candidates if all(letter not in word for letter in grays)]
 
 def rank_suggestions(candidates, greens, yellows, grays):
+    filtered = prefilter_grays(candidates, greens, yellows, grays)
     scored = []
-    for word in candidates:
+    for word in filtered:
         if not enforce_hard_mode(word, greens, yellows, grays):
             continue
-        entropy = calculate_entropy(word, candidates)
+        entropy = calculate_entropy(word, filtered)
         frequency = get_frequency(word)
         score = entropy * frequency
         scored.append((word, score, entropy, frequency))
