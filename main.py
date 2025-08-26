@@ -3,7 +3,7 @@ import tkinter as tk
 from collections import defaultdict
 from wordlist import load_wordle_list
 from feedback import get_feedback, update_constraints
-from solver import rank_suggestions, filter_candidates, get_frequency
+from solver import rank_suggestions, filter_candidates, get_frequency, prefilter_grays
 
 wordle_list = load_wordle_list()
 candidates = wordle_list.copy()
@@ -83,7 +83,7 @@ def auto_suggest():
         return
 
     if mode == "fast":
-        filtered = [w for w in candidates if all(l not in w for l in grays)]
+        filtered = prefilter_grays(candidates, {}, defaultdict(set), grays)
         top5 = sorted(
             [(w, get_frequency(w)) for w in filtered],
             key=lambda x: x[1],
@@ -166,7 +166,18 @@ for i in range(5):
     btn.grid(row=0, column=i, padx=5)
     feedback_buttons.append(btn)
 
-tk.Button(root, text="Apply Feedback", command=apply).grid(row=3, column=0, columnspan=5, pady=5)
+apply_button = tk.Button(root, text="Apply Feedback", command=apply)
+apply_button.grid(row=3, column=0, columnspan=5, pady=5)
+def check_apply_button(*args):
+    filled = all(len(var.get()) == 1 and var.get().isalpha() for var in letter_vars)
+    if filled:
+        apply_button.config(state="normal")
+    else:
+        apply_button.config(state="disabled")
+
+for var in letter_vars:
+    var.trace_add("write", check_apply_button)
+apply_button.config(state="disabled")
 
 tk.Label(root, text="Guess Log:").grid(row=4, column=0, sticky="w")
 guess_log = tk.Text(root, width=50, height=10)
