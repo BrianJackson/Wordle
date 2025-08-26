@@ -25,8 +25,6 @@ The solver enforces logical consistency across guesses:
 This ensures every guess builds on known information and avoids wasteful plays.
 
 Run the GUI with:
-
-```bash
 python main.py
 
 ## 🧪 CLI Usage
@@ -95,9 +93,3 @@ This ensures every guess builds on known information and avoids wasteful plays.
 - Solver API for integration
 
 Happy solving!
-
----
-
-Let me know if you want this README embedded in the GUI or printed from the CLI with a `--help` flag. We can keep refining this into a full-featured Wordle toolkit.
-
-
