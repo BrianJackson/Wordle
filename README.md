@@ -25,12 +25,15 @@ The solver enforces logical consistency across guesses:
 This ensures every guess builds on known information and avoids wasteful plays.
 
 Run the GUI with:
-python main.py
 
+```bash
+python main.py
+```
 ## 🧪 CLI Usage
 Run the solver from the terminal:
+```bash
 python cli.py --guess crane --feedback BYGBY
-
+```
 
 🎯 CLI Feedback Format
 Each letter in the feedback string corresponds to the result of your guess:
@@ -38,9 +41,10 @@ Each letter in the feedback string corresponds to the result of your guess:
 - Y = Yellow (letter is in the word but wrong position)
 - G = Green (letter is correct and in the correct position)
 
-
 Example:
+```bash
 python cli.py --guess crane --feedback BYGBY
+```
 Means:
 - C = not in the word
 - R = in the word, wrong position
@@ -56,7 +60,7 @@ Unit tests are located in the tests/ folder. Run all tests with:
 python -m unittest discover tests
 
 
-
+```bash
 📁 Folder Structure
 wordle/
 ├── main.py          # GUI entry point
@@ -69,7 +73,7 @@ wordle/
 └── tests/
     ├── test_feedback.py
     └── test_solver.py
-
+```
 
 
 📌 Requirements
