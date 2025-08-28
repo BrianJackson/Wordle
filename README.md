@@ -1,10 +1,12 @@
-# 🧠  Wordle Solver
+# 🧠  Wordle Solver v1.0.0
 
 <p align="center">
     <img src="docs/wordle_solver.png" alt="Wordle Solver Screenshot" width="500" />
 </p>
 
 A Python-based Wordle solver that uses entropy and word frequency to suggest optimal guesses. Includes both a GUI and CLI interface, with full hard mode enforcement.
+
+**🎉 NEW: Windows executable files available! No Python installation required.**
 
 ---
 
@@ -16,6 +18,28 @@ A Python-based Wordle solver that uses entropy and word frequency to suggest opt
 - ✅ Top 5 guess recommendations
 - ✅ CLI support for terminal-based solving
 - ✅ Unit tests for feedback and solver logic
+- ✅ **Windows executable files for easy distribution**
+
+---
+
+## 🚀 Quick Start
+
+### Option 1: Windows Executable (Recommended)
+Download the latest release executable:
+- **WordleSolver.exe** - GUI version with visual interface
+- **WordleSolverCLI.exe** - Command-line version
+
+No Python installation required! See [RELEASE.md](RELEASE.md) for download links and detailed instructions.
+
+### Option 2: Run from Source
+```bash
+git clone https://github.com/BrianJackson/Wordle.git
+cd Wordle
+pip install -r requirements.txt
+python main.py  # For GUI
+# or
+python cli.py --guess crane --feedback BYGBY  # For CLI
+```
 
 ---
 
@@ -81,10 +105,24 @@ wordle/
 
 
 📌 Requirements
+
+### For Executable Users
+- Windows 10 or later
+- No additional software needed!
+
+### For Python Users
 - Python 3.8+
-- wordfreq and numpy libraries:
-pip install wordfreq
-pip install numpy
+- Dependencies: `pip install -r requirements.txt`
+  - wordfreq
+  - numpy  
+  - pyinstaller (for building executables)
+
+### For Developers
+```bash
+pip install -r requirements.txt
+python -m unittest discover tests  # Run tests
+python build_executable.py         # Build executables
+```
 
 
 
