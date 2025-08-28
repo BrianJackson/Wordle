@@ -6,7 +6,7 @@ numpy
 pyinstaller
 
 # (Optional) Testing tools
-# pytest
+pytest
 
 # (Optional) If you later re-add the Flask API / frontend proxy
 # flask

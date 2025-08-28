@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import shutil
 
 def build_executable():
     """Build the Windows executable using PyInstaller"""
@@ -20,22 +21,31 @@ def build_executable():
     # Use different separators based on platform for PyInstaller
     separator = ";" if sys.platform == "win32" else ":"
     
-    # PyInstaller command
+    # Base PyInstaller command
     cmd = [
         "pyinstaller",
-        "--onefile",                    # Create a single executable file
-        "--windowed",                   # Don't show console window (for GUI)
-        "--name=WordleSolver",          # Name of the executable
-        f"--add-data=wordle_list.txt{separator}.", # Include the word list file
-        "--paths=.",                    # Add current directory to Python path
-        "--collect-data=wordfreq",      # Include wordfreq data files
-        "main.py"
+        "--onefile",
+        "--windowed",
+        "--name=WordleSolver",
+        f"--add-data=wordle_list.txt{separator}.",
+        "--paths=.",
+        "--collect-data=wordfreq",
+        "--hidden-import=numpy",
+        "--hidden-import=wordfreq",
     ]
-    
-    # Add icon if it exists
-    icon_path = Path("docs/wordle_solver.png")
-    if icon_path.exists():
-        cmd.insert(-1, f"--icon={icon_path}")
+
+    # Icon handling (Windows requires .ico)
+    ico_path = Path("docs/solver_icon.ico")
+    png_path = Path("docs/wordle_solver.png")
+    if ico_path.exists():
+        cmd.append(f"--icon={ico_path}")
+    else:
+        if png_path.exists():
+            print("[warn] PNG icon found but .ico required for Windows. Skipping icon. (Convert to docs/wordle_solver.ico to include.)")
+        else:
+            print("[info] No icon file found; proceeding without custom icon.")
+
+    cmd.append("main.py")
     
     print(f"Running: {' '.join(cmd)}")
     
@@ -61,12 +71,14 @@ def build_cli_executable():
     
     cmd = [
         "pyinstaller",
-        "--onefile",                    # Create a single executable file
-        "--console",                    # Show console window (for CLI)
-        "--name=WordleSolverCLI",       # Name of the executable
-        f"--add-data=wordle_list.txt{separator}.", # Include the word list file
-        "--paths=.",                    # Add current directory to Python path
-        "--collect-data=wordfreq",      # Include wordfreq data files
+        "--onefile",
+        "--console",
+        "--name=WordleSolverCLI",
+        f"--add-data=wordle_list.txt{separator}.",
+        "--paths=.",
+        "--collect-data=wordfreq",
+        "--hidden-import=numpy",
+        "--hidden-import=wordfreq",
         "cli.py"
     ]
     
@@ -84,28 +96,33 @@ def build_cli_executable():
         print(f"stderr: {e.stderr}")
         return False
 
-if __name__ == "__main__":
+def ensure_pyinstaller():
+    """Verify pyinstaller is installed; if not, provide guidance."""
+    if shutil.which("pyinstaller"):
+        return True
+    print("[error] PyInstaller not found in PATH. Install with: pip install pyinstaller")
+    return False
+
+def main():
+    if not ensure_pyinstaller():
+        sys.exit(1)
+
     success = True
-    
-    # Build CLI executable first (always works)
+
     if not build_cli_executable():
         success = False
-    
-    # Build GUI executable (may fail if tkinter not available)
+
     print("\nAttempting to build GUI executable...")
     try:
-        import tkinter
+        import tkinter  # noqa: F401
         if not build_executable():
             success = False
     except ImportError:
         print("⚠️  Tkinter not available - skipping GUI executable build")
-        print("   GUI executable can be built on systems with tkinter installed")
-    
+        print("   Install a Python distribution with tkinter to build the GUI.")
+
     if success:
         print("\n✅ All available builds completed successfully!")
-        print("Executables are available in the 'dist' directory")
-        
-        # List built executables
         dist_dir = Path("dist")
         if dist_dir.exists():
             print("\nBuilt executables:")
@@ -114,5 +131,8 @@ if __name__ == "__main__":
                     size_mb = exe.stat().st_size / (1024 * 1024)
                     print(f"  - {exe.name} ({size_mb:.1f} MB)")
     else:
-        print("\n❌ Some builds failed")
+        print("\n❌ Some builds failed. See messages above.")
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()
