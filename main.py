@@ -3,7 +3,7 @@ import tkinter as tk
 from collections import defaultdict
 from wordlist import load_wordle_list, get_frequency
 from feedback import get_feedback, update_constraints
-from solver import rank_suggestions, filter_candidates, prefilter_grays
+from solver import rank_suggestions, filter_candidates
 
 wordle_list = load_wordle_list()
 candidates = wordle_list.copy()
@@ -24,22 +24,21 @@ root.columnconfigure(0, weight=1)
 letter_vars = [tk.StringVar() for _ in range(5)]
 letter_boxes = []
 feedback_buttons = []
-full_word_var = tk.StringVar()
+current_pos = 0  # active letter index
 
-def fill_letter_boxes(*args):
-    word = full_word_var.get().upper()
-    for i in range(5):
-        letter_vars[i].set(word[i] if i < len(word) else "")
+def update_cursor_highlight():
+    for i, box in enumerate(letter_boxes):
+        if i == current_pos:
+            if box.cget('bg') != '#d3d3d3':
+                box.config(bg="#f0f8ff")
+        else:
+            if box.cget('bg') != '#d3d3d3':
+                box.config(bg="white")
 
 def cycle_feedback(i):
     order = {'B': 'Y', 'Y': 'G', 'G': 'B'}
     fb_state[i] = order[fb_state[i]]
     feedback_buttons[i].config(text=fb_display[fb_state[i]], bg=tile_colors[fb_state[i]])
-
-def keypress(event):
-    if event.char in '12345':
-        i = int(event.char) - 1
-        cycle_feedback(i)
 
 def animate_suggestion(word):
     for i in range(5):
@@ -50,6 +49,7 @@ def animate_suggestion(word):
 def reset_tile_colors():
     for box in letter_boxes:
         box.config(bg="white")
+    update_cursor_highlight()
 
 def apply():
     global mode
@@ -61,7 +61,11 @@ def apply():
     global candidates
     candidates = filter_candidates(candidates, guess, feedback, greens, yellows, grays)
     guess_log.insert(tk.END, f"{guess.upper()} → {''.join([fb_display[f] for f in fb_state])}\n")
-    full_word_var.set("")
+    for v in letter_vars:
+        v.set("")
+    global current_pos
+    current_pos = 0
+    update_cursor_highlight()
     for i in range(5):
         fb_state[i] = 'B'
         feedback_buttons[i].config(text=fb_display['B'], bg=tile_colors['B'])
@@ -83,13 +87,14 @@ def auto_suggest():
         return
 
     if mode == "fast":
-        filtered = prefilter_grays(candidates, greens, yellows, grays)
+        # Fast mode: only filter by known absent letters (initial all-gray guess scenario)
+        filtered = [w for w in candidates if all(l not in w for l in grays)]
         top5 = sorted(
             [(w, get_frequency(w)) for w in filtered],
             key=lambda x: x[1],
             reverse=True
         )[:5]
-        top5 = [(w, 0, 0, freq) for w, freq in top5]  # Pad with dummy entropy
+        top5 = [(w, 0, 0, freq) for w, freq in top5]
         guess_log.insert(tk.END, f"Fast mode: avoiding grays {', '.join(sorted(grays))}\n")
     else:
         top5 = rank_suggestions(candidates, greens, yellows, grays)
@@ -113,7 +118,8 @@ def restart():
     yellows.clear()
     grays.clear()
     mode = "entropy"
-    full_word_var.set("")
+    for v in letter_vars:
+        v.set("")
     guess_log.delete(1.0, tk.END)
     top5_output.delete(1.0, tk.END)
     remaining_output.delete(1.0, tk.END)
@@ -121,6 +127,9 @@ def restart():
         letter_vars[i].set("")
         fb_state[i] = 'B'
         feedback_buttons[i].config(text=fb_display['B'], bg=tile_colors['B'])
+    global current_pos
+    current_pos = 0
+    update_cursor_highlight()
     update_remaining()
 
 def update_remaining():
@@ -131,28 +140,7 @@ def update_remaining():
 
 # Layout
 
-# Create a frame to hold label and entry side by side
-
-# Validation function to allow only letters
-def validate_letters(P):
-    return (P.isalpha() or P == "") and len(P) <= 5
-
-vcmd = (root.register(validate_letters), '%P')
-
-word_entry_frame = tk.Frame(root)
-word_entry_frame.grid(row=0, column=0, sticky="w")
-tk.Label(word_entry_frame, text="Enter Word:").pack(side="left")
-full_word_entry = tk.Entry(word_entry_frame, textvariable=full_word_var, width=10, validate="key", validatecommand=vcmd)
-full_word_entry.pack(side="left")
-def enforce_uppercase(*args):
-    value = full_word_var.get()
-    if value != value.upper():
-        full_word_var.set(value.upper())
-    fill_letter_boxes()
-
-full_word_var.trace_add("write", enforce_uppercase)
-
-tk.Button(root, text="Restart", command=restart).grid(row=0, column=1, padx=(0, 10))
+# Create a frame to hold letter boxes (restart button moved to bottom)
 
 letter_frame = tk.Frame(root)
 letter_frame.grid(row=1, column=0, columnspan=5, pady=10)
@@ -162,6 +150,9 @@ for i in range(5):
                      font=('Helvetica', 18), state="readonly")
     entry.grid(row=0, column=i, padx=5)
     letter_boxes.append(entry)
+    def make_click_handler(idx):
+        return lambda e: set_current_pos(idx)
+    entry.bind('<Button-1>', make_click_handler(i))
 
 feedback_frame = tk.Frame(root)
 feedback_frame.grid(row=2, column=0, columnspan=5)
@@ -176,7 +167,11 @@ apply_button = tk.Button(root, text="Apply Feedback", command=apply)
 apply_button.grid(row=3, column=0, columnspan=5, pady=5)
 def check_apply_button(*args):
     filled = all(len(var.get()) == 1 and var.get().isalpha() for var in letter_vars)
-    if filled:
+    if not filled:
+        apply_button.config(state="disabled")
+        return
+    word = ''.join(var.get().lower() for var in letter_vars)
+    if word in candidates:
         apply_button.config(state="normal")
     else:
         apply_button.config(state="disabled")
@@ -197,10 +192,79 @@ tk.Label(root, text="Remaining Candidates:").grid(row=8, column=0, sticky="w")
 remaining_output = tk.Text(root, width=70, height=10)
 remaining_output.grid(row=9, column=0, columnspan=5)
 
+# Configure additional columns for proper right alignment of bottom controls
+for c in range(5):
+    root.columnconfigure(c, weight=1)
+
+# Place Restart button at bottom right
+tk.Button(root, text="Restart", command=restart).grid(row=10, column=4, sticky="e", padx=10, pady=(10, 5))
+
+def set_current_pos(idx):
+    global current_pos
+    current_pos = max(0, min(4, idx))
+    update_cursor_highlight()
+
+def keypress(event):
+    global current_pos
+    ch = event.char.upper()
+    if 'A' <= ch <= 'Z' and len(ch) == 1:
+        letter_vars[current_pos].set(ch)
+        # advance to next empty slot
+        next_pos = current_pos
+        for i in range(current_pos + 1, 5):
+            if letter_vars[i].get() == "":
+                next_pos = i
+                break
+        else:
+            if current_pos < 4:
+                next_pos = current_pos + 1
+        current_pos = min(4, next_pos)
+        update_cursor_highlight()
+        check_apply_button()
+        return
+    if event.keysym in ('BackSpace', 'Delete'):
+        if letter_vars[current_pos].get() == "":
+            # move left to previous filled
+            for i in range(current_pos - 1, -1, -1):
+                if letter_vars[i].get() != "":
+                    current_pos = i
+                    break
+        letter_vars[current_pos].set("")
+        update_cursor_highlight()
+        check_apply_button()
+        return
+    if event.keysym == 'Left':
+        current_pos = max(0, current_pos - 1)
+        update_cursor_highlight()
+        return
+    if event.keysym == 'Right':
+        current_pos = min(4, current_pos + 1)
+        update_cursor_highlight()
+        return
+    if event.keysym == 'Home':
+        current_pos = 0
+        update_cursor_highlight()
+        return
+    if event.keysym == 'End':
+        # Move to last filled or available slot after it
+        last_filled = -1
+        for i in range(5):
+            if letter_vars[i].get():
+                last_filled = i
+        if last_filled == -1:
+            current_pos = 0
+        else:
+            current_pos = min(4, last_filled + 1 if last_filled < 4 else last_filled)
+        update_cursor_highlight()
+        return
+
 def launch():
     update_remaining()
-    root.bind("<Key>", keypress)
+    root.bind('<Key>', keypress)
     root.mainloop()
+
+# Initial highlight
+update_cursor_highlight()
 
 if __name__ == "__main__":
     launch()

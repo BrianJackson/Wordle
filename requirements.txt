@@ -1,0 +1,10 @@
+# Core runtime dependencies for the Wordle solver
+wordfreq
+numpy
+
+# (Optional) Testing tools
+# pytest
+
+# (Optional) If you later re-add the Flask API / frontend proxy
+# flask
+# flask-cors
