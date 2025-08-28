@@ -4,6 +4,7 @@ from collections import defaultdict
 from wordlist import load_wordle_list, get_frequency
 from feedback import get_feedback, update_constraints
 from solver import rank_suggestions, filter_candidates
+from version import __version__
 
 wordle_list = load_wordle_list()
 candidates = wordle_list.copy()
@@ -17,7 +18,7 @@ tile_colors = {'G': '#6aaa64', 'Y': '#c9b458', 'B': '#787c7e'}
 
 
 root = tk.Tk()
-root.title("Wordle Solver")
+root.title(f"Wordle Solver v{__version__}")
 root.geometry("600x700")  # Wider default
 root.columnconfigure(0, weight=1)
 

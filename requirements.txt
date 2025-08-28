@@ -2,6 +2,9 @@
 wordfreq
 numpy
 
+# Build dependencies for creating executables
+pyinstaller
+
 # (Optional) Testing tools
 # pytest
 
