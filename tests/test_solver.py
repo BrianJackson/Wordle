@@ -14,8 +14,8 @@ class TestSolver(unittest.TestCase):
         greens = {}
         yellows = {}
         grays = set()
-        update_constraints("apple", "BYGBY", greens, yellows, grays)
-        filtered = filter_candidates(words, "apple", "BYGBY", greens, yellows, grays)
+        update_constraints("apple", "GBBGG", greens, yellows, grays)
+        filtered = filter_candidates(words, "apple", "GBBGG", greens, yellows, grays)
         self.assertIn("angle", filtered)
         self.assertNotIn("apple", filtered)
 
