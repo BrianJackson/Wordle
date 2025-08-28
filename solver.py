@@ -16,18 +16,12 @@ def calculate_entropy(guess, possible_solutions):
     entropy = -np.sum(probs * np.log2(probs))
     return float(entropy)
 
-def prefilter_grays(candidates, greens, yellows, grays):
-    if greens or yellows:
-        return candidates
-    return [word for word in candidates if all(letter not in word for letter in grays)]
-
 def rank_suggestions(candidates, greens, yellows, grays):
-    filtered = prefilter_grays(candidates, greens, yellows, grays)
+    # Single pass constraint check; avoids duplicated gray filtering logic
+    valid = [w for w in candidates if enforce_hard_mode(w, greens, yellows, grays)]
     scored = []
-    for word in filtered:
-        if not enforce_hard_mode(word, greens, yellows, grays):
-            continue
-        entropy = calculate_entropy(word, filtered)
+    for word in valid:
+        entropy = calculate_entropy(word, valid)
         frequency = get_frequency(word)
         score = entropy * frequency
         scored.append((word, score, entropy, frequency))

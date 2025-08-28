@@ -41,6 +41,9 @@ def update_constraints(guess, feedback, greens, yellows, grays):
         if fb == 'G':
             greens[i] = letter
         elif fb == 'Y':
+            # Initialize set on first yellow occurrence
+            if letter not in yellows:
+                yellows[letter] = set()
             yellows[letter].add(i)
         elif fb == 'B':
             grays.add(letter)

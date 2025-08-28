@@ -1,5 +1,9 @@
 # 🧠  Wordle Solver
 
+<p align="center">
+    <img src="docs/wordle_solver.png" alt="Wordle Solver Screenshot" width="500" />
+</p>
+
 A Python-based Wordle solver that uses entropy and word frequency to suggest optimal guesses. Includes both a GUI and CLI interface, with full hard mode enforcement.
 
 ---
